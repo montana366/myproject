@@ -1,0 +1,10 @@
+python3 -c "
+import serial, time
+arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=2)
+time.sleep(2)
+arduino.write(b'S1:45\n')
+print(arduino.readline())
+arduino.write(b'S1:135\n')
+print(arduino.readline())
+arduino.close()
+"
