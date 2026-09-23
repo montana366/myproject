@@ -1,0 +1,90 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+L1 = 10.0  # длина плеча, см
+L2 = 8.0   # длина предплечья, см
+
+def inverse_kinematics(x, y):
+    """По координатам (x, y) возвращает углы (theta1, theta2) в градусах."""
+    D = np.sqrt(x**2 + y**2)
+    
+    # Проверка достижимости
+    if D > L1 + L2:
+        print("Цель слишком далеко")
+        return None, None
+    if D < abs(L1 - L2):
+        print("Цель слишком близко")
+        return None, None
+    
+    # Угол локтя (теорема косинусов)
+    cos_theta2 = (D**2 - L1**2 - L2**2) / (2 * L1 * L2)
+    cos_theta2 = np.clip(cos_theta2, -1.0, 1.0)  # защита от ошибок округления
+    theta2 = np.arccos(cos_theta2)
+    
+    # Угол плеча
+    alpha = np.arctan2(y, x)
+    cos_beta = (D**2 + L1**2 - L2**2) / (2 * D * L1)
+    cos_beta = np.clip(cos_beta, -1.0, 1.0)
+    beta = np.arccos(cos_beta)
+    theta1 = alpha - beta
+    
+    # В градусы
+    theta1_deg = np.degrees(theta1)
+    theta2_deg = np.degrees(theta2)
+    
+    return theta1_deg, theta2_deg
+
+def forward_kinematics(theta1_deg, theta2_deg):
+    """По углам возвращает координаты кончика руки (x, y)."""
+    theta1 = np.radians(theta1_deg)
+    theta2 = np.radians(theta2_deg)
+    
+    x = L1 * np.cos(theta1) + L2 * np.cos(theta1 + theta2)
+    y = L1 * np.sin(theta1) + L2 * np.sin(theta1 + theta2)
+    return x, y
+
+def plot_arm(theta1_deg, theta2_deg):
+    """Рисует руку по углам."""
+    theta1 = np.radians(theta1_deg)
+    theta2 = np.radians(theta2_deg)
+    
+    # Основание
+    x0, y0 = 0, 0
+    # Локоть
+    x1 = L1 * np.cos(theta1)
+    y1 = L1 * np.sin(theta1)
+    # Кончик
+    x2 = x1 + L2 * np.cos(theta1 + theta2)
+    y2 = y1 + L2 * np.sin(theta1 + theta2)
+    
+    plt.figure(figsize=(6, 6))
+    plt.plot([x0, x1], [y0, y1], 'b-o', linewidth=3, markersize=10, label='Плечо')
+    plt.plot([x1, x2], [y1, y2], 'r-o', linewidth=3, markersize=10, label='Предплечье')
+    plt.plot(x2, y2, 'g*', markersize=20, label='Захват')
+    plt.plot(0, 0, 'ks', markersize=15, label='Основание')
+    
+    plt.xlim(-20, 20)
+    plt.ylim(-5, 20)
+    plt.grid(True)
+    plt.legend()
+    plt.title(f'θ1={theta1_deg:.1f}°, θ2={theta2_deg:.1f}°')
+    plt.gca().set_aspect('equal')
+    plt.show()
+
+# --- Тест ---
+if __name__ == '__main__':
+    # Целевая точка
+    target_x, target_y = 10, 5
+    
+    print(f"Цель: X={target_x}, Y={target_y}")
+    theta1, theta2 = inverse_kinematics(target_x, target_y)
+    
+    if theta1 is not None:
+        print(f"Углы: θ1={theta1:.2f}°, θ2={theta2:.2f}°")
+        
+        # Проверка: прямая кинематика должна вернуть исходную точку
+        x, y = forward_kinematics(theta1, theta2)
+        print(f"Проверка: X={x:.2f}, Y={y:.2f}")
+        
+        # Рисуем
+        plot_arm(theta1, theta2)
