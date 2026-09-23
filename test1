@@ -1,0 +1,22 @@
+#include <Servo.h>
+Servo servo1;
+
+void setup() {
+  Serial.begin(9600);
+  servo1.attach(9);
+  servo1.write(90);
+}
+
+void loop() {
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    if (cmd.startsWith("S1:")) {
+      int angle = cmd.substring(3).toInt();
+      angle = constrain(angle, 0, 180);
+      servo1.write(angle);
+      Serial.print("OK:");
+      Serial.println(angle);
+    }
+  }
+}
